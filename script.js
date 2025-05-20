@@ -79,11 +79,11 @@ async function loadNewQuestion() {
     questionText.innerText = question;
     pokemonImage.src = currentPokemon.image;
 
-  // Set correct answer
+  // Set correct answer 
     if (question === "Who's that Pokémon?") {
         correctAnswer = currentPokemon.name;
     } else if (question === "What is this Pokémon's typing?") {
-        correctAnswer = currentPokemon.types.join(", ");
+        correctAnswer = currentPokemon.types; // ✅ Keep it an array like ["dark", "flying"]
     } else if (question === "What is this Pokémon's pre-evolution?") {
         correctAnswer = evoResult?.previous || "None";
     } else if (question === "Who does this Pokémon evolve into?") {
@@ -96,16 +96,53 @@ async function loadNewQuestion() {
 
 
 // Event listener for the search input
+const allTypes = [
+    "normal", "fire", "water", "electric", "grass", "ice", "fighting", "poison",
+    "ground", "flying", "psychic", "bug", "rock", "ghost", "dragon", "dark",
+    "steel", "fairy"
+];
+
 searchInput.addEventListener("input", async () => {
     const query = searchInput.value.toLowerCase();
     searchResults.innerHTML = "";
+
+    const isTypingQuestion = questionText.innerText.includes("typing");
 
     if (!query) {
         searchResults.style.display = "none";
         return;
     }
 
-    const matches = pokemonNameList.filter(name => name.includes(query)).slice(0, 10); // limit results
+    // ✅ Case 1: Typing question — show types
+    if (isTypingQuestion) {
+        const matches = allTypes.filter(type => type.includes(query));
+        matches.forEach(type => {
+            const div = document.createElement("div");
+            div.className = "result-item";
+            div.textContent = type;
+
+            div.onclick = () => {
+                const selected = type.toLowerCase();
+                const isCorrect = correctAnswer.includes(selected);
+
+                alert(isCorrect
+                    ? `✅ Correct! ${currentPokemon.name} is a ${correctAnswer.join(", ")}-type Pokémon.`
+                    : `❌ Incorrect.\nYou chose: ${selected}\nCorrect answer: ${correctAnswer.join(", ")}`);
+
+                searchInput.value = "";
+                searchResults.style.display = "none";
+                loadNewQuestion();
+            };
+
+            searchResults.appendChild(div);
+        });
+
+        searchResults.style.display = matches.length ? "block" : "none";
+        return; // skip the rest (no Pokémon names)
+    }
+
+    // ✅ Case 2: All other questions — show Pokémon names + sprites
+    const matches = pokemonNameList.filter(name => name.includes(query)).slice(0, 10);
 
     for (const name of matches) {
         const div = document.createElement("div");
@@ -119,8 +156,7 @@ searchInput.addEventListener("input", async () => {
             spriteImg.src =
                 pokeData.sprites.front_default ||
                 pokeData.sprites.other["official-artwork"].front_default ||
-                "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"; // final fallback
-
+                "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png";
         } catch {
             spriteImg.src = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png";
         }
@@ -133,9 +169,9 @@ searchInput.addEventListener("input", async () => {
 
         div.onclick = () => {
             const userAnswer = name.toLowerCase();
-            const expected = correctAnswer.toLowerCase();
+            const expected = correctAnswer.toLowerCase?.() || correctAnswer;
 
-            const isCorrect = expected.includes(userAnswer) || userAnswer.includes(expected);
+            const isCorrect = expected.includes?.(userAnswer) || userAnswer.includes?.(expected);
 
             alert(isCorrect
                 ? `✅ Correct! The answer was: ${correctAnswer}`
